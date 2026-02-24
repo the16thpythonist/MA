@@ -15,5 +15,5 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-aslurmx -cn haicore_1gpu \
+aslurmx -cn haicore_1gpu -o time=12:00:00 \
     cmd bash -c 'cd src && python main.py +experiment=zinc_det dataset=zinc_det general.wandb=disabled'
