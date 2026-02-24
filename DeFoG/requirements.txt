@@ -17,3 +17,4 @@ torchmetrics==0.11.4
 tqdm==4.65.0
 wandb==0.15.4
 seaborn
+rdkit-pypi

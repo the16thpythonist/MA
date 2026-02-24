@@ -45,3 +45,5 @@ model:
 
     # The dimensions should satisfy dx % n_head == 0
     hidden_dims: { 'dx': 256, 'de': 64, 'dy': 128, 'n_head': 8, 'dim_ffX': 256, 'dim_ffE': 128, 'dim_ffy': 256}
+
+    y_loss_type: 'mse'

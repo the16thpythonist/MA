@@ -73,6 +73,27 @@ class SumExceptBatchKL(Metric):
         return self.total_value / self.total_samples
 
 
+class MSEMetric(Metric):
+    def __init__(self):
+        super().__init__()
+        self.add_state("total_mse", default=torch.tensor(0.0), dist_reduce_fx="sum")
+        self.add_state("total_samples", default=torch.tensor(0.0), dist_reduce_fx="sum")
+
+    def update(self, preds: Tensor, target: Tensor, weight: Tensor = None) -> None:
+        """Update state with predictions and targets.
+        preds: (bs, dy)  — predicted regression values
+        target: (bs, dy) — ground truth regression values."""
+        diff = preds - target
+        per_sample = (diff * diff).mean(dim=-1)  # mean over properties
+        if weight is not None:
+            per_sample = per_sample * weight
+        self.total_mse += per_sample.sum()
+        self.total_samples += preds.size(0)
+
+    def compute(self):
+        return self.total_mse / self.total_samples
+
+
 class CrossEntropyMetric(Metric):
     def __init__(self):
         super().__init__()

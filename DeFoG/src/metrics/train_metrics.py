@@ -9,6 +9,7 @@ from torchmetrics import Metric, MeanSquaredError, MetricCollection
 from metrics.abstract_metrics import (
     CrossEntropyMetric,
     KLDMetric,
+    MSEMetric,
 )
 
 
@@ -25,16 +26,20 @@ class EdgeMSE(MeanSquaredError):
 class TrainLossDiscrete(nn.Module):
     """Train with Cross entropy"""
 
-    def __init__(self, lambda_train, kld=False):
+    def __init__(self, lambda_train, kld=False, y_loss_type="ce"):
         super().__init__()
         self.lambda_train = lambda_train
+        self.y_loss_type = y_loss_type
         if not kld:
             self.node_loss = CrossEntropyMetric()
             self.edge_loss = CrossEntropyMetric()
         else:
             self.node_loss = KLDMetric()
             self.edge_loss = KLDMetric()
-        self.y_loss = CrossEntropyMetric()
+        if y_loss_type == "mse":
+            self.y_loss = MSEMetric()
+        else:
+            self.y_loss = CrossEntropyMetric()
 
     def forward(
         self,
@@ -92,7 +97,7 @@ class TrainLossDiscrete(nn.Module):
                 "train_loss/E_CE": (
                     self.edge_loss.compute() if true_E.numel() > 0 else -1
                 ),
-                "train_loss/y_CE": self.y_loss.compute() if true_y.numel() > 0 else -1,
+                f"train_loss/y_{self.y_loss_type.upper()}": self.y_loss.compute() if true_y.numel() > 0 else -1,
             }
             if wandb.run:
                 wandb.log(to_log, commit=True)
@@ -116,7 +121,7 @@ class TrainLossDiscrete(nn.Module):
         to_log = {
             "train_epoch/x_CE": epoch_node_loss,
             "train_epoch/E_CE": epoch_edge_loss,
-            "train_epoch/y_CE": epoch_y_loss,
+            f"train_epoch/y_{self.y_loss_type.upper()}": epoch_y_loss,
         }
         if wandb.run:
             wandb.log(to_log, commit=False)

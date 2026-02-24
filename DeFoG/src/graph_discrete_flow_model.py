@@ -75,6 +75,7 @@ class GraphDiscreteFlowModel(pl.LightningModule):
 
         self.train_loss = TrainLossDiscrete(
             self.cfg.model.lambda_train,
+            y_loss_type=getattr(self.cfg.model, "y_loss_type", "ce"),
         )
 
         self.model = GraphTransformer(
@@ -863,12 +864,13 @@ class GraphDiscreteFlowModel(pl.LightningModule):
                 print("KL E:", kl_E.item())
 
             
+            G_1_pred_uncond = (pred_X, pred_E)
             R_t_X_uncond, R_t_E_uncond = (
                 self.rate_matrix_designer.compute_graph_rate_matrix(
                     t,
                     node_mask,
                     G_t,
-                    G_1_pred,
+                    G_1_pred_uncond,
                 )
             )
             guidance_weight = self.cfg.general.guidance_weight

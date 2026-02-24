@@ -379,24 +379,9 @@ class ZINCDataModule(MolecularDataModule):
         regressor = getattr(cfg.general, "conditional", None)
         dynamic = getattr(cfg.general, "dynamic", False)
         
-        if regressor and dynamic:
-            if not isinstance(dynamic, bool):
-                raise TypeError("dynamic must be a boolean (true/false)")
-            
-            if not target or not isinstance(target, str) or len(target.strip()) == 0:
-                raise ValueError(
-                    "dynamic=True requires cfg.general.target to be a non-empty string, "
-                    "e.g. 'logp tpsa' or 'logp,tpsa' or 'num_atoms logp qed'"
-                )
-            
-            # target string kann verschiedene Trennzeichen haben
+        if regressor and target and isinstance(target, str) and len(target.strip()) > 0:
+            # Use SelectDynamicZincTransform for any valid target string
             transform = SelectDynamicZincTransform(target)
-        elif regressor and target == "mu":
-            print("error mu not available")
-        elif regressor and target == "homo":
-            print("error homo not available")
-        elif regressor and target == "both":
-            print("error both not available")
         else:
             print("Removed Y transform. No condition")
             transform = RemoveYTransform()

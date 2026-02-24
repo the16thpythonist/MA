@@ -13,4 +13,7 @@ hidden_mlp_dims: {'X': 256, 'E': 128, 'y': 128}
 hidden_dims : {'dx': 256, 'de': 64, 'dy': 64, 'n_head': 8, 'dim_ffX': 256, 'dim_ffE': 128, 'dim_ffy': 128}
 
 # training weight for edges, y, and nodes
-lambda_train: [5, 0]              # X=1, E = lambda[0], y = lambda[1]
+lambda_train: [5, 1]              # X=1, E = lambda[0], y = lambda[1]
+
+# y loss type: 'ce' for cross-entropy (classification), 'mse' for regression
+y_loss_type: 'ce'
