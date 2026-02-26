@@ -127,8 +127,14 @@ class GraphDiscreteFlowModel(pl.LightningModule):
             self.print("Found a batch with no edges. Skipping.")
             return
 
+        # Save original y before conditional dropout for use as loss target
+        original_y = data.y.clone()
+        y_dropout_active = False
+
         if self.conditional:
-            if torch.rand(1) < 0.1: data.y = torch.ones_like(data.y, device=self.device) * -1
+            if torch.rand(1) < 0.1:
+                data.y = torch.ones_like(data.y, device=self.device) * -100
+                y_dropout_active = True
 
         dense_data, node_mask = utils.to_dense(
             data.x,
@@ -137,22 +143,20 @@ class GraphDiscreteFlowModel(pl.LightningModule):
             data.batch,
         )
 
-        #print("data.y:", data.y)
-       
         dense_data = dense_data.mask(node_mask)
         X, E = dense_data.X, dense_data.E
         noisy_data = self.apply_noise(X, E, data.y, node_mask)
         extra_data = self.compute_extra_data(noisy_data)
         pred = self.forward(noisy_data, extra_data, node_mask)
-        #print("pred :",pred )
-        #print("pred.y :",pred.y )
+        # Skip y loss when conditional dropout is active: the model received
+        # the unconditional token (-100) so it cannot predict the real properties.
         loss = self.train_loss(
             masked_pred_X=pred.X,
             masked_pred_E=pred.E,
-            pred_y=pred.y,
+            pred_y=pred.y if not y_dropout_active else pred.y.new_empty(0),
             true_X=X,
             true_E=E,
-            true_y=data.y,
+            true_y=original_y if not y_dropout_active else original_y.new_empty(0),
             log=i % self.log_every_steps == 0,
         )
 
@@ -194,10 +198,11 @@ class GraphDiscreteFlowModel(pl.LightningModule):
     def on_train_epoch_end(self) -> None:
         to_log = self.train_loss.log_epoch_metrics()
         #print("DEBUG to_log:", to_log)
+        y_loss_type = getattr(self.cfg.model, "y_loss_type", "ce").upper()
         self.print(
             f"Epoch {self.current_epoch}: X_CE: {to_log['train_epoch/x_CE'] :.3f}"
             f" -- E_CE: {to_log['train_epoch/E_CE'] :.3f} --"
-            f" y_CE: {to_log['train_epoch/y_CE'] :.3f}"
+            f" y_{y_loss_type}: {to_log[f'train_epoch/y_{y_loss_type}'] :.3f}"
             f" -- {time.time() - self.start_epoch_time:.1f}s "
         )
         epoch_at_metrics, epoch_bond_metrics = self.train_metrics.log_epoch_metrics()
@@ -838,7 +843,7 @@ class GraphDiscreteFlowModel(pl.LightningModule):
         pred_X_cond = pred_X
         
         if self.conditional:
-            uncond_y = torch.ones_like(y_t, device=self.device) * -1
+            uncond_y = torch.ones_like(y_t, device=self.device) * -100
             noisy_data["y_t"] = uncond_y
             
             extra_data = self.compute_extra_data(noisy_data)
@@ -903,7 +908,11 @@ class GraphDiscreteFlowModel(pl.LightningModule):
             print("s[0]:", s[0])
 
         if s[0] == 1.0:
-            prob_X, prob_E = pred_X, pred_E
+            if self.conditional:
+                # Use conditional predictions for the final step
+                prob_X, prob_E = pred_X_cond, pred_E_cond
+            else:
+                prob_X, prob_E = pred_X, pred_E
 
         sampled_s = flow_matching_utils.sample_discrete_features(
             prob_X, prob_E, node_mask=node_mask

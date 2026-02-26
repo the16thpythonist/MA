@@ -153,7 +153,7 @@ class ZINCDataset(InMemoryDataset):
         pre_filter=None,
         force_reload: bool = False,
     ) -> None:
-        self.csv_path = csv_path if csv_path else "/hkfs/work/workspace_haic/scratch/rx3495-workspace_C/DeFoG/data/zink_det/zinc_250k_rdkit.csv"
+        self.csv_path = csv_path if csv_path else osp.join(osp.dirname(osp.dirname(osp.dirname(osp.abspath(__file__)))), "data", "zinc_det", "zinc_250k_rdkit.csv")
         self.subset = subset
         assert split in ['train', 'val', 'test']
         self.remove_h = remove_h
@@ -374,7 +374,7 @@ class ZINCDataModule(MolecularDataModule):
         self.datadir = cfg.dataset.datadir
         self.remove_h = cfg.dataset.remove_h
         self.aromatic = cfg.dataset.aromatic
-        self.csv_path = "/hkfs/work/workspace_haic/scratch/rx3495-workspace_C/DeFoG/data/zink_det/zinc_250k_rdkit.csv"
+        self.csv_path = osp.join(osp.dirname(osp.dirname(osp.dirname(osp.abspath(__file__)))), "data", "zinc_det", "zinc_250k_rdkit.csv")
         target = getattr(cfg.general, "target", None)
         regressor = getattr(cfg.general, "conditional", None)
         dynamic = getattr(cfg.general, "dynamic", False)

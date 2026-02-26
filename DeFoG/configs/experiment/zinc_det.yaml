@@ -16,19 +16,20 @@ general:
     conditional: True
     target: 'num_atoms,logp'
     dynamic: False
-    guidance_weight: 0.9
+    guidance_weight: 1.0
     final_model_samples_to_generate: 1000
     final_model_samples_to_save: 50
     final_model_chains_to_save: 20
 train:
     optimizer: adamw
-    n_epochs: 50
+    n_epochs: 100
     batch_size: 256
     save_model: True
     lr: 2e-4
     num_workers: 4
     time_distortion: 'polydec'
 sample:
+    sample_steps: 1000
     time_distortion: 'polydec'
     omega: 0.
     eta: 0.

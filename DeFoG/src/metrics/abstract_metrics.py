@@ -91,6 +91,8 @@ class MSEMetric(Metric):
         self.total_samples += preds.size(0)
 
     def compute(self):
+        if self.total_samples == 0:
+            return torch.tensor(0.0)
         return self.total_mse / self.total_samples
 
 

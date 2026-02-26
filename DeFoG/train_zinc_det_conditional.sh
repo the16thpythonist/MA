@@ -15,5 +15,12 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-aslurmx -cn haicore_1gpu -o time=12:00:00 \
-    cmd bash -c 'cd src && python main.py +experiment=zinc_det dataset=zinc_det general.wandb=disabled'
+# ── Sampling parameters (edit here) ──────────────────────────────
+SAMPLE_STEPS=1000               # number of denoising steps (fewer = faster)
+SAMPLE_TIME_DISTORTION='polydec' # identity, polydec, cos
+# ─────────────────────────────────────────────────────────────────
+
+aslurmx -cn haicore_1gpu -o time=16:00:00 \
+    cmd python src/main.py +experiment=zinc_det dataset=zinc_det general.wandb=disabled \
+        sample.sample_steps="$SAMPLE_STEPS" \
+        sample.time_distortion="$SAMPLE_TIME_DISTORTION"
